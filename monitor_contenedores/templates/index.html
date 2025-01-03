@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Métricas y Predicciones</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Métricas y Predicciones de Contenedores</h1>
+
+        <!-- Cronómetro -->
+        <div class="text-center">
+            <h3>Próxima actualización en: <span id="timer">30</span> segundos</h3>
+        </div>
+
+        <!-- Tabla de métricas -->
+        <table class="table table-bordered" id="metricsTable">
+            <thead>
+                <tr>
+                    <th>Contenedor ID</th>
+                    <th>Uso CPU (segundos)</th>
+                    <th>Uso Memoria (GB)</th>
+                    <th>Red Velocidad (MB/s)</th>
+                    <th>Almacenamiento Uso (GB)</th>
+                    <th>Estado del Contenedor</th>
+                    <th>Reporte</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        var timeLeft = 30;
+        function updateTimer() {
+            if (timeLeft <= 0) {
+                timeLeft = 30;
+                actualizarDatos();
+            }
+            $('#timer').text(timeLeft);
+            timeLeft--;
+        }
+
+        function actualizarDatos() {
+            $.getJSON('/get_metrics', function(data) {
+                console.log(data);
+
+                var tableBody = $('#metricsTable tbody');
+                tableBody.empty();
+
+                data.forEach(function(item) {
+                    //var acciones = `<button class="btn btn-primary" onclick="descargarReporte('${item.contenedor_id}')"><i class="fas fa-download"></i>Descargar Reporte</button>`;
+                    var acciones = '';
+                    if (item.prediccion === 'Alerta' || item.prediccion === 'Critico') {
+                       acciones = `<button class="btn btn-primary" onclick="descargarReporte('${item.contenedor_id}')"><i class="fas fa-download"></i>Descargar Reporte</button>`;
+                    }
+
+
+                    var row = `<tr>
+                        <td>${item.contenedor_id}</td>
+                        <td>${item.cpu_uso.toFixed(4)}</td>
+                        <td>${(item.memoria_uso).toFixed(4)}</td>
+                        <td>${(item.red_velocidad ).toFixed(2)}</td>
+                        <td>${item.almacenamiento_uso.toFixed(8)}</td>
+                        <td class="${item.prediccion === 'Critico' ? 'bg-critical' : item.prediccion === 'Normal' ? 'bg-normal' : 'bg-alerta'}">
+                            ${item.prediccion}
+                        <td>${acciones}</td>
+                        </td>
+                    </tr>`;
+                    tableBody.append(row);
+                });
+            });
+        }
+
+        setInterval(updateTimer, 1000);
+        $(document).ready(function() {
+            actualizarDatos();
+        });
+
+        function descargarReporte(contenedorId) {
+            window.location.href = `/descargar_reporte?contenedor_id=${contenedorId}`;
+        }
+
+    </script>
+</body>
+</html>

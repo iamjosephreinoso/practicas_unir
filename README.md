@@ -1,6 +1,6 @@
 # practicas_unir
 
-# Monitorización y Predicción de Recursos de Contenedores en Docker
+# Monitorización de Recursos de Contenedores en Docker
 
 ## Pasos de Configuración
 
@@ -58,3 +58,33 @@ El archivo `trained_model.pkl` contiene el modelo de aprendizaje automático pre
 
 ---
 
+# Interfaz Gráfica para Monitoreo
+
+##  Monitor de Contenedores Docker con Flask
+
+### 1. Clonar el repositorio
+
+Clona el repositorio desde GitHub en tu máquina local:
+
+```bash
+git clone https://github.com/iamjosephreinoso/practicas_unir.git
+cd monitor_contenedores
+```
+
+### 2. Construir la imagen Docker
+
+```bash
+docker build -t monitor-contenedores .
+```
+
+### 2. Ejecutar el contenedor Docker
+
+```bash
+docker run -p 5000:5000 monitor-contenedores
+```
+
+### 3. Acceder a la aplicación
+
+```bash
+http://localhost:5000
+```
