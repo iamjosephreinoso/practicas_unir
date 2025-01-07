@@ -26,7 +26,7 @@ docker logs monitor-container
 Ejecute el contenedor de cAdvisor para monitorear las métricas de los contenedores Docker:
 
 ```bash
-docker run --detach --volume=/:/rootfs:ro --volume=/var/run:/var/run:ro --volume=/sys:/sys:ro --volume=/var/lib/docker/:/var/lib/docker:ro --publish=8080:8080 --name=cadvisor gcr.io/cadvisor/cadvisor:latest
+docker run -d --name=cadvisor --privileged --volume=/:/rootfs:ro --volume=/var/run:/var/run:ro --volume=/sys:/sys:ro --volume=/var/lib/docker/:/var/lib/docker:ro --volume=/etc/machine-id:/etc/machine-id:ro --publish=8080:8080 --restart=always google/cadvisor:latest 
 ```
 
 ### 4. Verificación de cAdvisor
@@ -64,27 +64,26 @@ El archivo `trained_model.pkl` contiene el modelo de aprendizaje automático pre
 
 ### 1. Clonar el repositorio
 
-Clona el repositorio desde GitHub en tu máquina local:
+Como ya tenemos clonado el repositorio desde GitHub en tu máquina local, ingresamos a la carpeta monitor_contenedores:
 
 ```bash
-git clone https://github.com/iamjosephreinoso/practicas_unir.git
 cd monitor_contenedores
 ```
 
-### 2. Construir la imagen Docker
+### 2. Ejecutamos por proyecto en Flask
 
 ```bash
-docker build -t monitor-contenedores .
-```
-
-### 2. Ejecutar el contenedor Docker
-
-```bash
-docker run -p 5000:5000 monitor-contenedores
+python app.py
 ```
 
 ### 3. Acceder a la aplicación
 
+Para acceder y verificar que se esta realizando el monitoreo, verifique el contenedor de cAdvisoresta ejecutado.
+
 ```bash
 http://localhost:5000
 ```
+
+Al ingresar a la URL en el puerto 5000 nos saldra una tabla monitoreando los contenedores de docker.
+
+![Aplicativo](img/aplicativo.png "Vista del aplicativo")
