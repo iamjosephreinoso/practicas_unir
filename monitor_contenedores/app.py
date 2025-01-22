@@ -4,27 +4,38 @@ import time
 import re
 import pickle
 import numpy as np
+from prometheus_client import Counter, generate_latest, Summary
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from sklearn.preprocessing import MinMaxScaler
 import os
 from datetime import datetime
+
 app = Flask(__name__)
+
+
+REQUEST_COUNT = Counter('flask_request_count', 'Total number of requests', ['method', 'endpoint'])
+REQUEST_LATENCY = Summary('flask_request_latency_seconds', 'Request latency')
 
 previous_network_metrics = {}
 contenedores = {}
 
 def get_cadvisor_metrics():
-    url = 'http://localhost:8080/metrics'  # Cambia el puerto si es necesario
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.text
-    else:
-        print("Error al obtener las métricas de cAdvisor.")
+    url = 'http://cadvisor:8080/metrics'  # Change port if necessary
+    try:
+        response = requests.get(url, timeout=5)  # Timeout of 5 seconds
+        if response.status_code == 200:
+            return response.text
+        else:
+            return None
+    except requests.RequestException as e:
         return None
 
-
 def process_metrics(metrics):
+
+    if not metrics:
+        return []
+
     data = []
     lines = metrics.splitlines()
     timestamp = time.time()
@@ -78,12 +89,16 @@ def process_metrics(metrics):
     return data
 
 def extract_label_value(label_string, label_name):
+    print(f"Etiquetas disponibles: {label_string}")
     match = re.search(rf'{label_name}="([^"]+)"', label_string)
-    return match.group(1) if match else None
-
+    if match and match.group(1):  # Verifica que la etiqueta no esté vacía
+        return match.group(1)
+    else:
+        return None
 
 def predecir(data):
-    with open("static/trained_model.pkl", "rb") as model_file:
+
+    with open("static/trained_model1.pkl", "rb") as model_file:
         model = pickle.load(model_file)
 
     scaler = MinMaxScaler()
@@ -104,7 +119,6 @@ def predecir(data):
 
     return predicted_state
 
-
 def generar_reporte_pdf(contenedor_id, estado):
     archivo_pdf = f"static/reporte_{contenedor_id}.pdf"
 
@@ -114,34 +128,25 @@ def generar_reporte_pdf(contenedor_id, estado):
     c.drawString(100, 750, "Reporte de Estado del Contenedor")
     c.drawString(100, 730, f"Contenedor ID: {contenedor_id}")
     c.drawString(100, 710, f"Estado: {estado}")
-
-
-    '''c.drawString(100, 690, f"Uso de CPU: {metrics['cpu_uso']} segundos")
-    c.drawString(100, 670, f"Uso de Memoria: {metrics['memoria_uso']} GB")
-    c.drawString(100, 650, f"Velocidad de Red: {metrics['red_velocidad']} MB/s")
-    c.drawString(100, 630, f"Uso de Almacenamiento: {metrics['almacenamiento_uso']} GB")'''
-
     fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    c.drawString(100, 610, f"Fecha de generación del reporte: {fecha_hora}")
-
-    if estado == "Alerta":
-        c.drawString(100, 690, "Solución: Revisar el uso de recursos y optimizar las aplicaciones.")
-    elif estado == "Critico":
-        c.drawString(100, 690,
-                     "Solución: Tomar acciones inmediatas para reducir el uso de recursos y verificar procesos.")
+    c.drawString(100, 690, f"Fecha de generación del reporte: {fecha_hora}")
 
     c.save()
     return archivo_pdf
 
 @app.route('/')
 def index():
+    REQUEST_COUNT.labels(method='GET', endpoint='/').inc()
     return render_template('index.html')
 
 @app.route('/get_metrics', methods=['GET'])
+@REQUEST_LATENCY.time()
 def get_metrics():
     metrics = get_cadvisor_metrics()
-    processed_data = process_metrics(metrics)
+    if metrics is None:
+        return jsonify({'error': 'Unable to fetch metrics from cAdvisor'}), 500
 
+    processed_data = process_metrics(metrics)
     results = []
     for data in processed_data:
         prediction = predecir(data)
@@ -157,13 +162,16 @@ def get_metrics():
 
     return jsonify(results)
 
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
 @app.route('/descargar_reporte')
 def descargar_reporte():
-    contenedor_id = request.args.get('contenedor_id')  # Obtener el ID del contenedor
+    contenedor_id = request.args.get('contenedor_id')
     estado = contenedores.get(contenedor_id, {}).get("estado", "Desconocido")
     archivo_pdf = generar_reporte_pdf(contenedor_id, estado)
     return send_from_directory(os.getcwd(), archivo_pdf, as_attachment=True)
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)

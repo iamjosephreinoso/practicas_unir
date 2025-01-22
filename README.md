@@ -1,68 +1,14 @@
 # practicas_unir
 
-# Monitorización de Recursos de Contenedores en Docker
+# Aplicativo de Monitoreo de Métricas y Predicciones de Contenedores
 
-## Pasos de Configuración
+## Pasos de Ejecución
 
-### 1. Construcción de la Imagen Docker para el Monitor de Contenedores
-
-Cree una imagen Docker para monitorear contenedores (para que el contenedor funcione el archivo `monitor.sh` debe estar en la misma raíz que el dockerfile):
+### 1. Clonar el repositorio e ingresamos al proyecto
 
 ```bash
-docker build -t monitor-container .
+git clone https://github.com/iamjosephreinoso/practicas_unir.git
 ```
-
-### 2. Ejecución del Contenedor de Monitorización
-
-Ejecute el contenedor basado en la imagen creada y verifique que funcione correctamente:
-
-```bash
-docker run -d --name monitor-container monitor-container
-docker logs monitor-container
-```
-
-### 3. Configuración de cAdvisor para la Recolección de Métricas
-
-Ejecute el contenedor de cAdvisor para monitorear las métricas de los contenedores Docker:
-
-```bash
-docker run -d --name=cadvisor --privileged --volume=/:/rootfs:ro --volume=/var/run:/var/run:ro --volume=/sys:/sys:ro --volume=/var/lib/docker/:/var/lib/docker:ro --volume=/etc/machine-id:/etc/machine-id:ro --publish=8080:8080 --restart=always google/cadvisor:latest 
-```
-
-### 4. Verificación de cAdvisor
-
-Una vez iniciado, puede verificar que cAdvisor está funcionando accediendo a las siguientes URL en su navegador:
-
-- Interfaz gráfica: [http://localhost:8080](http://localhost:8080)
-- Métricas en formato texto: [http://localhost:8080/metrics](http://localhost:8080/metrics)
-
-### 5. Ejecución del Script de Monitoreo y Predicción
-
-Utilice el script `recolectar.py` para monitorear los contenedores en tiempo real cada 30 segundos y realizar predicciones basadas en un modelo preentrenado:
-
-```bash
-python recolectar.py
-```
-
-El script:
-
-- Lee las métricas de cAdvisor.
-- Procesa las métricas para obtener los valores relevantes de cada contenedor.
-- Usa el archivo `trained_model.pkl` para realizar predicciones sobre el estado de los recursos del contenedor.
-
----
-
-## Archivo Trained Model
-
-El archivo `trained_model.pkl` contiene el modelo de aprendizaje automático previamente entrenado para predecir el estado de los contenedores. Este archivo debe estar en la misma ubicación que el script `recolectar.py` para que funcione correctamente.
-
----
-
-# Interfaz Gráfica para Monitoreo
-
-##  Monitor de Contenedores Docker con Flask
-
-### 1. Clonar el repositorio
 
 Como ya tenemos clonado el repositorio desde GitHub en tu máquina local, ingresamos a la carpeta monitor_contenedores:
 
@@ -70,15 +16,47 @@ Como ya tenemos clonado el repositorio desde GitHub en tu máquina local, ingres
 cd monitor_contenedores
 ```
 
-### 2. Ejecutamos por proyecto en Flask
+### 2. Ejecutamos el Docker Compose
+
+El archivo docker-compose.yml ya está configurado para iniciar los servicios necesarios: cAdvisor, Prometheus y la aplicación Flask. Para iniciar todos los servicios, ejecuta:
 
 ```bash
-python app.py
+docker-compose up -d
 ```
 
-### 3. Acceder a la aplicación
+Esto lanzará los siguientes servicios:
 
-Para acceder y verificar que se esta realizando el monitoreo, verifique el contenedor de cAdvisoresta ejecutado.
+ - cAdvisor: Se ejecuta en el puerto 8080.
+
+ - Prometheus: Se ejecuta en el puerto 9090.
+
+ - Flask: Proporciona la interfaz gráfica en el puerto 5000.
+
+### 3. Verificar el Funcionamiento
+
+Para acceder y verificar que se esta realizando el monitoreo, verifique los servicios.
+
+###cAdvisor
+
+Accede a cAdvisor para verificar las métricas de los contenedores:
+
+```bash
+Ingresa: http://localhost:8080/metrics
+```
+
+###Prometheus
+
+Accede a Prometheus para confirmar que las métricas están siendo recopiladas:
+
+```bash
+Accede a: http://localhost:9090 
+```
+
+En la pestaña Targets, asegúrate de que el objetivo cadvisor y flask_app esté en estado UP.
+
+###Flask
+
+Accede a la aplicación Flask para visualizar el monitoreo de las métricas
 
 ```bash
 http://localhost:5000
