@@ -36,25 +36,25 @@ Esto lanzará los siguientes servicios:
 
 Para acceder y verificar que se esta realizando el monitoreo, verifique los servicios.
 
-###cAdvisor
+### cAdvisor
 
 Accede a cAdvisor para verificar las métricas de los contenedores:
 
 ```bash
-Ingresa: http://localhost:8080/metrics
+http://localhost:8080/metrics
 ```
 
-###Prometheus
+### Prometheus
 
 Accede a Prometheus para confirmar que las métricas están siendo recopiladas:
 
 ```bash
-Accede a: http://localhost:9090 
+http://localhost:9090 
 ```
 
 En la pestaña Targets, asegúrate de que el objetivo cadvisor y flask_app esté en estado UP.
 
-###Flask
+### Flask
 
 Accede a la aplicación Flask para visualizar el monitoreo de las métricas
 
